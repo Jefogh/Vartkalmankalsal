@@ -1,4 +1,4 @@
-name: Build Windows Desktop Application 
+name: Build Windows Desktop Application
 
 on:
   push:
@@ -14,19 +14,21 @@ jobs:
         uses: actions/checkout@v3  # استخدام أحدث إصدار
 
       - name: Set up Python
-        uses: actions/setup-python@v4  # استخدام أحدث إصدار
+        uses: actions/setup-python@v4  # إعداد Python
         with:
-          python-version: '3.10'  # تثبيت إصدار Python
+          python-version: '3.10'  # استخدام إصدار Python 3.10
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt  # تثبيت المتطلبات من requirements.txt
 
+      - name: Install PyInstaller
+        run: pip install pyinstaller  # تثبيت PyInstaller
+
       - name: Build executable with PyInstaller
         run: |
-          pip install pyinstaller
-          pyinstaller --onefile --windowed main.py  # بناء الملف التنفيذي .exe
+          pyinstaller --onefile --windowed --name salkhhm main.py  # بناء الملف التنفيذي بصيغة exe مع اسم salkhhm
 
       - name: List dist directory contents  # خطوة لفحص الملفات في مجلد dist
         run: dir dist
@@ -34,5 +36,5 @@ jobs:
       - name: Upload Executable
         uses: actions/upload-artifact@v3  # رفع الملف التنفيذي كـ Artifact
         with:
-          name: Executable
-          path: dist/*.exe  # رفع الملف التنفيذي بصيغة .exe من مجلد dist
+          name: salkhhm-Executable
+          path: dist/salkhhm.exe  # رفع الملف التنفيذي salkhhm.exe من مجلد dist
