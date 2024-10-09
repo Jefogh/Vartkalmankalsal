@@ -214,30 +214,33 @@ class CaptchaApp:
         threading.Thread(target=request_thread).start()
 
     def get_captcha(self, session, captcha_id, username):
-        try:
-            captcha_url = f"https://api.ecsc.gov.sy:8080/files/fs/captcha/{captcha_id}"
-            while True:
-                response = session.get(captcha_url)
+    try:
+        captcha_url = f"https://api.ecsc.gov.sy:8080/files/fs/captcha/{captcha_id}"
+        while True:
+            response = session.get(captcha_url)
 
-                self.update_notification(f"Server Response: {response.text}",
-                                         "green" if response.status_code == 200 else "red")
+            # عرض نص الرد من الخادم بغض النظر عن الحالة
+            self.update_notification(f"Server Response: {response.text}",
+                                     "green" if response.status_code == 200 else "red")
 
-                if response.status_code == 200:
-                    response_data = response.json()
-                    return response_data.get("file")
-                elif response.status_code == 429:
-                    self.update_notification("Rate limit exceeded. Retrying in 100ms...", "yellow")
-                    time.sleep(0.1)
-                elif response.status_code in {401, 403}:
-                    self.update_notification(f"Error {response.status_code}. Re-logging in...", "red", response.text)
-                    if self.login(username, self.accounts[username]["password"], session):
-                        continue
-                else:
-                    self.update_notification(f"Failed to get captcha. Full Response: {response.text}", "red")
-                    break
-        except Exception as e:
-            self.update_notification(f"Failed to get captcha: {e}", "red")
-        return None
+            if response.status_code == 200:
+                response_data = response.json()
+                return response_data.get("file")
+            elif response.status_code == 429:
+                self.update_notification("Rate limit exceeded. Retrying in 100ms...", "yellow")
+                time.sleep(0.1)
+            elif response.status_code in {401, 403}:
+                self.update_notification(f"Error {response.status_code}. Re-logging in...", "red", response.text)
+                if self.login(username, self.accounts[username]["password"], session):
+                    continue
+            else:
+                # عرض الرد النصي الكامل عند حدوث أي خطأ آخر من الخادم
+                self.update_notification(f"Server Error {response.status_code}: {response.text}", "red")
+                break
+    except Exception as e:
+        self.update_notification(f"Exception occurred: {e}", "red")
+    return None
+
 
     def show_captcha(self, captcha_data, username, captcha_id):
         try:
