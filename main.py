@@ -213,15 +213,14 @@ class CaptchaApp:
 
         threading.Thread(target=request_thread).start()
 
-    def get_captcha(self, session, captcha_id, username):
+def get_captcha(self, session, captcha_id, username):
     try:
         captcha_url = f"https://api.ecsc.gov.sy:8080/files/fs/captcha/{captcha_id}"
         while True:
             response = session.get(captcha_url)
 
             # عرض نص الرد من الخادم بغض النظر عن الحالة
-            self.update_notification(f"Server Response: {response.text}",
-                                     "green" if response.status_code == 200 else "red")
+            self.update_notification(f"Server Response: {response.text}", "green" if response.status_code == 200 else "red")
 
             if response.status_code == 200:
                 response_data = response.json()
@@ -230,7 +229,7 @@ class CaptchaApp:
                 self.update_notification("Rate limit exceeded. Retrying in 100ms...", "yellow")
                 time.sleep(0.1)
             elif response.status_code in {401, 403}:
-                self.update_notification(f"Error {response.status_code}. Re-logging in...", "red", response.text)
+                self.update_notification(f"Error {response.status_code}. Re-logging in...", "red")
                 if self.login(username, self.accounts[username]["password"], session):
                     continue
             else:
@@ -240,7 +239,6 @@ class CaptchaApp:
     except Exception as e:
         self.update_notification(f"Exception occurred: {e}", "red")
     return None
-
 
     def show_captcha(self, captcha_data, username, captcha_id):
         try:
