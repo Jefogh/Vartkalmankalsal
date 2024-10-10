@@ -200,16 +200,30 @@ class CaptchaApp:
         self.spinner_canvas.pack(pady=10)
         self.spinner = ExpandingCircle(self.spinner_canvas, 50, 50, 30, 'blue')
 
-        def request_thread():
-            captcha_data = self.get_captcha(session, captcha_id, username)
-            if captcha_data:
-                self.executor.submit(self.show_captcha, captcha_data, username, captcha_id)
-            else:
-                self.update_notification(f"Failed to get captcha.", "red")
+    def request_captcha(self, username, captcha_id, loading_indicator):
+        loading_indicator.start()
 
+        session = self.accounts[username].get("session")
+        if not session:
+            self.update_notification(f"No session found for user {username}", "red")
             loading_indicator.stop()
-            self.spinner.stop()
-            self.spinner_canvas.pack_forget()
+            return
+
+        self.spinner_canvas = tk.Canvas(self.main_frame, width=100, height=100)
+        self.spinner_canvas.pack(pady=10)
+        self.spinner = ExpandingCircle(self.spinner_canvas, 50, 50, 30, 'blue')
+
+        def request_thread():
+            try:
+                captcha_data = self.get_captcha(session, captcha_id, username)
+                if captcha_data:
+                    self.executor.submit(self.show_captcha, captcha_data, username, captcha_id)
+                # تم عرض الرد من الخادم فقط في get_captcha
+            finally:
+                # إيقاف السبينر وعناصر التحميل فور استلام أي رد
+                loading_indicator.stop()
+                self.spinner.stop()
+                self.spinner_canvas.pack_forget()
 
         threading.Thread(target=request_thread).start()
 
@@ -219,24 +233,32 @@ class CaptchaApp:
             while True:
                 response = session.get(captcha_url)
 
+                # عرض رد الخادم فقط مهما كان نوع الرد
                 self.update_notification(f"Server Response: {response.text}",
                                          "green" if response.status_code == 200 else "red")
 
+                # إرجاع البيانات إذا كان الرد ناجحًا
                 if response.status_code == 200:
                     response_data = response.json()
                     return response_data.get("file")
                 elif response.status_code == 429:
-                    self.update_notification("Rate limit exceeded. Retrying in 100ms...", "yellow")
+                    # في حالة تجاوز الحد، نعيد المحاولة
                     time.sleep(0.1)
                 elif response.status_code in {401, 403}:
-                    self.update_notification(f"Error {response.status_code}. Re-logging in...", "red", response.text)
+                    # محاولة إعادة تسجيل الدخول في حالة الحاجة
                     if self.login(username, self.accounts[username]["password"], session):
                         continue
                 else:
-                    self.update_notification(f"Failed to get captcha. Full Response: {response.text}", "red")
+                    # إيقاف التكرار عند أي رد آخر
                     break
         except Exception as e:
-            self.update_notification(f"Failed to get captcha: {e}", "red")
+            self.update_notification(f"Error: {str(e)}", "red")
+        finally:
+            # إيقاف جميع عناصر الانتظار عند استلام أي رد من الخادم
+            if hasattr(self, 'spinner'):
+                self.spinner.stop()
+            if hasattr(self, 'spinner_canvas'):
+                self.spinner_canvas.pack_forget()
         return None
 
     def show_captcha(self, captcha_data, username, captcha_id):
@@ -270,7 +292,7 @@ class CaptchaApp:
             self.spinner_canvas.pack_forget()
 
         except Exception as e:
-            self.update_notification(f"Failed to show captcha: {e}", "red")
+            self.update_notification(f"Failed to show captcha: {e}", "red", response.txt)
             self.spinner.stop()
             self.spinner_canvas.pack_forget()
 
@@ -322,7 +344,7 @@ class CaptchaApp:
         try:
             get_url = f"https://api.ecsc.gov.sy:8080/rs/reserve?id={captcha_id}&captcha={captcha_solution}"
             response = session.get(get_url)
-            self.update_notification(f"Serverتم التثبيت بنجاح Response: {response.text}",
+            self.update_notification(f"Server تم التثبيت بنجاح: {response.text}",
                                      "green" if response.status_code == 200 else "red")
         except Exception as e:
             self.update_notification(f"Failed to submit captcha: {e}", "red")
@@ -330,22 +352,21 @@ class CaptchaApp:
     @staticmethod
     def generate_user_agent():
         user_agent_list = [
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)      Chrome/98.0.4758.102 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15",
-             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0",
-             "Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:109.0) Gecko/20100101 Firefox/109.0",
-             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36",
-             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Safari/605.1.15",
-             "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0",
-             "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko",
-             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:85.0) Gecko/20100101 Firefox/85.0",
-             "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:92.0) Gecko/20100101 Firefox/92.0",
-             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; Trident/7.0; rv:11.0) like Gecko",
-             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:100.0) Gecko/20100101 Firefox/100.0",
-             "Mozilla/5.0 (X11; Linux x86_64; rv:85.0) Gecko/20100101 Firefox/85.0",
-             "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; AS; rv:11.0) like Gecko"
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+            "Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:109.0)",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6)",
+            "Mozilla/5.0 (Windows NT 6.1; Win64; x64) ",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0",
+            "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:85.0) Gecko/20100101 Firefox/85.0",
+            "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:92.0) Gecko/20100101 Firefox/92.0",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; Trident/7.0; rv:11.0) like Gecko",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:100.0) Gecko/20100101 Firefox/100.0",
+            "Mozilla/5.0 (X11; Linux x86_64; rv:85.0) Gecko/20100101 Firefox/85.0",
+            "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; AS; rv:11.0) like Gecko"
 ]
 
         return random.choice(user_agent_list)
