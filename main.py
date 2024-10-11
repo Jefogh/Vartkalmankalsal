@@ -116,10 +116,6 @@ class CaptchaApp:
         self.time_label = None
         self.executor = ThreadPoolExecutor(max_workers=4)
 
-        self.alarm_time = None
-        self.alarm_set = False
-        self.check_alarm_job = None
-
         self.load_model()
         self.setup_ui()
 
@@ -144,17 +140,39 @@ class CaptchaApp:
         self.time_label = tk.Label(self.root, text="", fg="white", bg="black", font=("Helvetica", 12))
         self.time_label.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.alarm_button = tk.Button(self.main_frame, text="Set Alarm", command=self.set_alarm)
-        self.alarm_button.pack(pady=10)
-
         self.create_widgets()
-
     def create_widgets(self):
         self.add_account_button = tk.Button(self.main_frame, text="Add Account", command=self.add_account)
         self.add_account_button.pack()
+
         self.upload_background_button = tk.Button(self.main_frame, text="Upload Backgrounds",
                                                   command=self.upload_backgrounds)
         self.upload_background_button.pack()
+
+        self.login_button = tk.Button(self.main_frame, text="Login", command=self.login_saved_accounts)
+        self.login_button.pack()
+
+    def login_saved_accounts(self):
+        for username, account_info in self.accounts.items():
+            session = account_info.get("session")
+            if not session or not self.is_session_valid(session):
+                user_agent = self.generate_user_agent()
+                session = self.create_session(user_agent)
+                password = account_info.get("password")
+
+                if self.login(username, password, session):
+                    self.accounts[username]["session"] = session
+                    self.update_notification(f"Login successful for {username}", "green")
+                else:
+                    self.update_notification(f"Login failed for {username}", "red")
+
+    def is_session_valid(self, session):
+        try:
+            test_url = "https://api.ecsc.gov.sy:8080/some_endpoint_to_check_session"
+            response = session.get(test_url)
+            return response.status_code == 200
+        except requests.RequestException:
+            return False
 
     def create_account_ui(self, username):
         account_frame = tk.Frame(self.main_frame)
@@ -428,32 +446,6 @@ class CaptchaApp:
             except requests.RequestException as e:
                 self.update_notification(f"Request error: {e}", "red")
                 return False
-
-    def set_alarm(self):
-        time_string = simpledialog.askstring("Set Alarm", "Enter alarm time in format hh:mm:ss:ms")
-        if time_string:
-            try:
-                hours, minutes, seconds, milliseconds = map(int, time_string.split(":"))
-                current_time = datetime.now()
-                alarm_delta = timedelta(hours=hours, minutes=minutes, seconds=seconds, milliseconds=milliseconds)
-                self.alarm_time = current_time + alarm_delta
-
-                self.alarm_set = True
-                self.update_notification(f"Alarm set for {time_string}", "green")
-                if not self.check_alarm_job:
-                    self.check_alarm_job = self.root.after(100, self.check_alarm)
-            except ValueError:
-                self.update_notification("Invalid time format. Please enter hh:mm:ss:ms", "red")
-
-    def check_alarm(self):
-        if self.alarm_set:
-            current_time = datetime.now()
-            if current_time >= self.alarm_time:
-                self.update_notification("Alarm time reached! Pressing 'cap1' twice.", "green")
-                self.press_cab1_twice()
-                self.alarm_set = False
-            else:
-                self.check_alarm_job = self.root.after(100, self.check_alarm)
 
     def press_cab1_twice(self):
         username = list(self.accounts.keys())[0]
