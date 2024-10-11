@@ -454,7 +454,7 @@ class CaptchaApp:
             "Sec-Fetch-Dest": "empty",
             "Sec-Fetch-Mode": "cors",
             "Sec-Fetch-Site": "same-site",
-            "Priority": "u=0",
+            "Priority": "u=1",
         }
         session = requests.Session()
         session.headers.update(headers)
