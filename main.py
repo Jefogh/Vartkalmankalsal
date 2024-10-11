@@ -343,16 +343,46 @@ class CaptchaApp:
         captcha_label.grid(row=0, column=0, padx=10, pady=10)
 
     def remove_background_keep_original_colors(self, captcha_image, background_image):
-        if captcha_image.shape != background_image.shape:
-            background_image = cv2.resize(background_image, (captcha_image.shape[1], captcha_image.shape[0]))
+        # 1. تقليل الدقة لتسريع العملية
+        scale_factor = 0.5
+        captcha_image = cv2.resize(captcha_image, (0, 0), fx=scale_factor, fy=scale_factor)
+        background_image = cv2.resize(background_image, (0, 0), fx=scale_factor, fy=scale_factor)
 
-        diff = cv2.absdiff(captcha_image, background_image)
-        gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-        _, mask = cv2.threshold(gray_diff, 30, 255, cv2.THRESH_BINARY)
-        result = cv2.bitwise_and(captcha_image, captcha_image, mask=mask)
-        result[np.all(result == [255, 255, 255], axis=-1)] = [0, 0, 0]
+        # 2. إذا كان GPU مدعومًا، استخدم CUDA لإزالة الخلفية
+        if cv2.cuda.getCudaEnabledDeviceCount() > 0:
+            captcha_image_gpu = cv2.cuda_GpuMat()
+            background_image_gpu = cv2.cuda_GpuMat()
 
-        return result
+            captcha_image_gpu.upload(captcha_image)
+            background_image_gpu.upload(background_image)
+
+            # حساب الفرق بين الصورتين باستخدام GPU
+            diff_gpu = cv2.cuda.absdiff(captcha_image_gpu, background_image_gpu)
+            diff = diff_gpu.download()
+
+            # تحويل الفرق إلى صورة رمادية
+            gray_gpu = cv2.cuda.cvtColor(diff_gpu, cv2.COLOR_BGR2GRAY)
+            gray = gray_gpu.download()
+
+            # تطبيق العتبة (threshold) على الصورة الرمادية
+            _, mask = cv2.threshold(gray, 30, 255, cv2.THRESH_BINARY)
+
+            # رفع القناع إلى GPU
+            mask_gpu = cv2.cuda_GpuMat()
+            mask_gpu.upload(mask)
+
+            # إزالة الخلفية مع الحفاظ على الألوان الأصلية باستخدام GPU
+            result_gpu = cv2.cuda.bitwise_and(captcha_image_gpu, captcha_image_gpu, mask=mask_gpu)
+            result = result_gpu.download()
+
+            return result
+        else:
+            # إذا لم يكن GPU مدعومًا، نستخدم الطريقة العادية
+            diff = cv2.absdiff(captcha_image, background_image)
+            gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+            _, mask = cv2.threshold(gray, 30, 255, cv2.THRESH_BINARY)
+            result = cv2.bitwise_and(captcha_image, captcha_image, mask=mask)
+            return result
 
     def submit_captcha(self, username, captcha_id, captcha_solution):
         session = self.accounts[username].get("session")
