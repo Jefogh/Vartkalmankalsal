@@ -439,27 +439,34 @@ class CaptchaApp:
             else:
                 elapsed_time = time.time() - start_time
                 self.update_notification(f"Failed to login for user {username}. Time: {elapsed_time:.2f}s", "red")
-
     @staticmethod
     def create_session(user_agent):
         headers = {
-            "User-Agent": user_agent,
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "ar,en-US;q=0.7,en;q=0.3",
-            "Referer": "https://ecsc.gov.sy/login",
-            "Content-Type": "application/json",
-            "Source": "WEB",
-            "Origin": "https://ecsc.gov.sy",
-            "Connection": "keep-alive",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-site",
-            "Priority": "u=1",
+            "User-Agent": user_agent,  # تعريف نوع العميل
+            "Accept": "application/json, text/plain, */*",  # قبول أنواع المحتوى المختلفة
+            "Accept-Language": "ar,en-US;q=0.7,en;q=0.3",  # تحديد اللغات المفضلة
+            "Referer": "https://ecsc.gov.sy/login",  # الصفحة الأصلية للطلب
+            "Content-Type": "application/json",  # نوع المحتوى المرسل
+            "Source": "WEB",  # مصدر الطلب (إذا كان الخادم يدعمه)
+            "Origin": "https://ecsc.gov.sy",  # المصدر الأساسي للطلب
+            "Connection": "keep-alive",  # الحفاظ على الاتصال مفتوحًا
+            "Sec-Fetch-Dest": "empty",  # نوع الهدف (أمان المتصفح)
+            "Sec-Fetch-Mode": "cors",  # وضع الأمان للطلب
+            "Sec-Fetch-Site": "same-site",  # الطلب من نفس الموقع (لأغراض الأمان)
+            "Priority": "u=0, i",  # أولوية قصوى للطلب
+            "Accept-Encoding": "gzip, deflate, br",  # ضغط البيانات لتسريع النقل
+            "Cache-Control": "no-cache, no-store, must-revalidate",  # منع التخزين المؤقت
+            "Upgrade-Insecure-Requests": "1",  # دعم الانتقال للـ HTTPS
+            "X-Priority": "1",  # أولوية مرتفعة للطلب (تجريبي)
+            "Urgency": "high",  # أولوية عالية (إذا كان الخادم يدعمه)
+            "X-DNS-Prefetch-Control": "on",  # تحسين الاستجابة عبر جلب DNS مسبقًا
+            "TE": "trailers",  # تحسين التعامل مع محتويات الرد
+            "Pragma": "no-cache",  # متصفح الأمان (لمنع التخزين المؤقت)
+            "Timing-Allow-Origin": "*",
         }
         session = requests.Session()
         session.headers.update(headers)
         return session
-
     def login(self, username, password, session, retry_count=3):
         login_url = "https://api.ecsc.gov.sy:8080/secure/auth/login"
         login_data = {"username": username, "password": password}
