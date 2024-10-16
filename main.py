@@ -400,20 +400,20 @@ class CaptchaApp:
     @staticmethod
     def generate_user_agent():
         user_agent_list = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.5195.102 Safari/537.36",
-        "Mozilla/5.0 (Linux; Android 12; SM-S906B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.70 Mobile Safari/537.36",
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
-        "Mozilla/5.0 (iPad; CPU OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
-        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/109.0",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0",
-        "Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Mobile Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:92.0) Gecko/20100101 Firefox/92.0",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
-        "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.181 Mobile Safari/537.36",
-        "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:101.0) Gecko/20100101 Firefox/101.0",
-        "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36",
-        "Mozilla/5.0 (Linux; Android 8.0.0; Pixel 2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36"
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
+        "Mozilla/5.0 (Linux; Android 11; SM-G996B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.210 Mobile Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0",
+        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36",
+        "Mozilla/5.0 (Linux; Android 10; Pixel 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.101 Mobile Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.64",
+        "Mozilla/5.0 (iPad; CPU OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.2 Safari/605.1.15",
+        "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0",
+        "Mozilla/5.0 (Linux; Android 9; SAMSUNG SM-A505FN) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.111 Mobile Safari/537.36",
+        "Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.2 Safari/605.1.15",
+        "Mozilla/5.0 (X11; FreeBSD amd64; rv:91.0) Gecko/20100101 Firefox/91.0"
     ]
 
         return random.choice(user_agent_list)
@@ -447,22 +447,18 @@ class CaptchaApp:
             "Accept-Language": "ar,en-US;q=0.7,en;q=0.3",  # تحديد اللغات المفضلة
             "Referer": "https://ecsc.gov.sy/login",  # الصفحة الأصلية للطلب
             "Content-Type": "application/json",  # نوع المحتوى المرسل
-            "Source": "WEB",  # مصدر الطلب (إذا كان الخادم يدعمه)
+            "Source": "WEB",  # مصدر الطلب
             "Origin": "https://ecsc.gov.sy",  # المصدر الأساسي للطلب
-            "Connection": "keep-alive",  # الحفاظ على الاتصال مفتوحًا
-            "Sec-Fetch-Dest": "empty",  # نوع الهدف (أمان المتصفح)
-            "Sec-Fetch-Mode": "cors",  # وضع الأمان للطلب
-            "Sec-Fetch-Site": "same-site",  # الطلب من نفس الموقع (لأغراض الأمان)
-            "Priority": "u=0, i",  # أولوية قصوى للطلب
+            "Connection": "keep-alive",  # الحفاظ على الاتصال مفتوحًا لتحسين الأداء
+            "Priority": "u=1",  # أولوية عالية (تجريبي)
+            "X-Priority": "1",  # أولوية قصوى للطلب
             "Accept-Encoding": "gzip, deflate, br",  # ضغط البيانات لتسريع النقل
-            "Cache-Control": "no-cache, no-store, must-revalidate",  # منع التخزين المؤقت
-            "Upgrade-Insecure-Requests": "1",  # دعم الانتقال للـ HTTPS
-            "X-Priority": "1",  # أولوية مرتفعة للطلب (تجريبي)
-            "Urgency": "high",  # أولوية عالية (إذا كان الخادم يدعمه)
-            "X-DNS-Prefetch-Control": "on",  # تحسين الاستجابة عبر جلب DNS مسبقًا
+            "Cache-Control": "no-cache, no-store, must-revalidate",  # منع التخزين المؤقت لضمان بيانات محدثة
+            "Upgrade-Insecure-Requests": "1",  # الانتقال إلى HTTPS عند توفره
+            "X-DNS-Prefetch-Control": "on",  # تحسين زمن الاستجابة عبر جلب DNS مسبقًا
             "TE": "trailers",  # تحسين التعامل مع محتويات الرد
-            "Pragma": "no-cache",  # متصفح الأمان (لمنع التخزين المؤقت)
-            "Timing-Allow-Origin": "*",
+            "Pragma": "no-cache",  # منع التخزين المؤقت على مستوى المتصفح
+            "Timing-Allow-Origin": "*",  # السماح بقياس أداء الطلبات
         }
         session = requests.Session()
         session.headers.update(headers)
