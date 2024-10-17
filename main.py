@@ -425,6 +425,7 @@ class CaptchaApp:
             user_agent = self.generate_user_agent()
             session = self.create_session(user_agent)
             start_time = time.time()
+
             if self.login(username, password, session):
                 elapsed_time = time.time() - start_time
                 self.update_notification(f"Login successful for user {username}. Time: {elapsed_time:.2f}s", "green")
@@ -435,10 +436,124 @@ class CaptchaApp:
                     "captcha_id1": None,
                     "captcha_id2": None,
                 }
-                self.create_account_ui(username)
+
+                # إرسال طلب POST لاستخراج المعاملات باستخدام الجلسة الحالية
+                process_data = self.fetch_process_ids(session)
+                if process_data:
+                    self.create_account_ui(username, process_data)
+                else:
+                    self.update_notification(f"Failed to fetch process IDs for user {username}.", "red")
             else:
                 elapsed_time = time.time() - start_time
                 self.update_notification(f"Failed to login for user {username}. Time: {elapsed_time:.2f}s", "red")
+
+    def fetch_process_ids(self, session):
+        try:
+            url = "https://api.ecsc.gov.sy:8080/dbm/db/execute"
+            payload = {
+                "ALIAS": "OPkUVkYsyq",
+                "P_USERNAME": "WebSite",
+                "P_PAGE_INDEX": 0,
+                "P_PAGE_SIZE": 100
+            }
+            headers = {
+                "Content-Type": "application/json",
+                "Alias": "OPkUVkYsyq",
+                "Referer": "https://ecsc.gov.sy/requests",
+                "Origin": "https://ecsc.gov.sy",
+            }
+
+            response = session.post(url, json=payload, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                process_ids = data.get("P_RESULT", [])
+                if process_ids:
+                    return process_ids
+                else:
+                    self.update_notification("No process IDs found.", "red")
+            else:
+                self.update_notification(f"Failed to fetch process IDs. Status code: {response.status_code}", "red")
+        except Exception as e:
+            self.update_notification(f"Error fetching process IDs: {str(e)}", "red")
+        return None
+
+    def create_account_ui(self, username, process_data):
+        account_frame = tk.Frame(self.main_frame)
+        account_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        tk.Label(account_frame, text=f"Account: {username}").pack(side=tk.LEFT)
+
+        for process in process_data:
+            process_id = process.get("PROCESS_ID")
+            center_name = process.get("ZCENTER_NAME", "Unknown Center")
+
+            process_frame = tk.Frame(account_frame)
+            process_frame.pack(fill=tk.X, padx=10, pady=5)
+
+            # إنشاء زر يحتوي على ZCENTER_NAME مع تصغير حجم الخط
+            loading_indicator = ttk.Progressbar(process_frame, mode='indeterminate')
+
+            process_button = tk.Button(process_frame, text=center_name, font=("Helvetica", 10),
+                                       command=lambda pid=process_id, indicator=loading_indicator: threading.Thread(
+                                           target=self.request_captcha,
+                                           args=(username, pid, indicator)
+                                       ).start())
+            process_button.pack(side=tk.LEFT, padx=8, pady=5)
+            loading_indicator.pack(side=tk.LEFT, padx=8, pady=5)
+
+    def request_captcha(self, username, captcha_id, loading_indicator):
+        loading_indicator.start()
+
+        session = self.accounts[username].get("session")
+        if not session:
+            self.update_notification(f"No session found for user {username}", "red")
+            loading_indicator.stop()
+            return
+
+        self.spinner_canvas = tk.Canvas(self.main_frame, width=100, height=100)
+        self.spinner_canvas.pack(pady=10)
+        self.spinner = ExpandingCircle(self.spinner_canvas, 50, 50, 30, 'blue')
+
+        def request_thread():
+            try:
+                captcha_data = self.get_captcha(session, captcha_id, username)
+                if captcha_data:
+                    self.executor.submit(self.show_captcha, captcha_data, username, captcha_id)
+            finally:
+                loading_indicator.stop()
+                self.spinner.stop()
+                self.spinner_canvas.pack_forget()
+
+        threading.Thread(target=request_thread).start()
+
+    def get_captcha(self, session, captcha_id, username):
+        try:
+            captcha_url = f"https://api.ecsc.gov.sy:8080/files/fs/captcha/{captcha_id}"
+            while True:
+                response = session.get(captcha_url)
+
+                self.update_notification(f"Server Response: {response.text}",
+                                         "green" if response.status_code == 200 else "red")
+
+                if response.status_code == 200:
+                    response_data = response.json()
+                    return response_data.get("file")
+                elif response.status_code == 429:
+                    time.sleep(0.1)
+                elif response.status_code in {401, 403}:
+                    if self.login(username, self.accounts[username]["password"], session):
+                        continue
+                else:
+                    break
+        except Exception as e:
+            self.update_notification(f"Error: {str(e)}", "red")
+        finally:
+            if hasattr(self, 'spinner'):
+                self.spinner.stop()
+            if hasattr(self, 'spinner_canvas'):
+                self.spinner_canvas.pack_forget()
+        return None
+
     @staticmethod
     def create_session(user_agent):
         headers = {
