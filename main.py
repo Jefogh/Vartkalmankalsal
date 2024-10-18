@@ -569,11 +569,9 @@ class CaptchaApp:
             "X-Priority": "1",  # أولوية قصوى للطلب
             "Accept-Encoding": "gzip, deflate, br",  # ضغط البيانات لتسريع النقل
             "Cache-Control": "no-cache, no-store, must-revalidate",  # منع التخزين المؤقت لضمان بيانات محدثة
-            "Upgrade-Insecure-Requests": "1",  # الانتقال إلى HTTPS عند توفره
             "X-DNS-Prefetch-Control": "on",  # تحسين زمن الاستجابة عبر جلب DNS مسبقًا
             "TE": "trailers",  # تحسين التعامل مع محتويات الرد
             "Pragma": "no-cache",  # منع التخزين المؤقت على مستوى المتصفح
-            "Timing-Allow-Origin": "*",  # السماح بقياس أداء الطلبات
         }
         session = requests.Session()
         session.headers.update(headers)
