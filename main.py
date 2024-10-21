@@ -557,21 +557,18 @@ class CaptchaApp:
     @staticmethod
     def create_session(user_agent):
         headers = {
-            "User-Agent": user_agent,  # تعريف نوع العميل
-            "Accept": "application/json, text/plain, */*",  # قبول أنواع المحتوى المختلفة
-            "Accept-Language": "ar,en-US;q=0.7,en;q=0.3",  # تحديد اللغات المفضلة
-            "Referer": "https://ecsc.gov.sy/login",  # الصفحة الأصلية للطلب
-            "Content-Type": "application/json",  # نوع المحتوى المرسل
-            "Source": "WEB",  # مصدر الطلب
-            "Origin": "https://ecsc.gov.sy",  # المصدر الأساسي للطلب
-            "Connection": "keep-alive",  # الحفاظ على الاتصال مفتوحًا لتحسين الأداء
-            "Priority": "u=1",  # أولوية عالية (تجريبي)
-            "X-Priority": "1",  # أولوية قصوى للطلب
-            "Accept-Encoding": "gzip, deflate, br",  # ضغط البيانات لتسريع النقل
-            "Cache-Control": "no-cache, no-store, must-revalidate",  # منع التخزين المؤقت لضمان بيانات محدثة
-            "X-DNS-Prefetch-Control": "on",  # تحسين زمن الاستجابة عبر جلب DNS مسبقًا
-            "TE": "trailers",  # تحسين التعامل مع محتويات الرد
-            "Pragma": "no-cache",  # منع التخزين المؤقت على مستوى المتصفح
+            "User-Agent": user_agent,
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "ar,en-US;q=0.7,en;q=0.3",
+            "Referer": "https://ecsc.gov.sy/login",
+            "Content-Type": "application/json",
+            "Source": "WEB",
+            "Origin": "https://ecsc.gov.sy",
+            "Connection": "keep-alive",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-site",
+            "Priority": "u=1",
         }
         session = requests.Session()
         session.headers.update(headers)
