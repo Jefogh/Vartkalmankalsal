@@ -259,7 +259,7 @@ class CaptchaApp:
                 if response.status_code == 200:
                     response_data = response.json()
                     return response_data.get("file")
-                elif response.status_code == 429:
+                elif response.status_code == 4295:
                     # في حالة تجاوز الحد، نعيد المحاولة
                     time.sleep(0.1)
                 elif response.status_code in {401, 403}:
