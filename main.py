@@ -557,7 +557,6 @@ class CaptchaApp:
     @staticmethod
     def create_session(user_agent):
         headers = {
-            "Host": "api.ecsc.gov.sy:8080",
             "User-Agent": user_agent,
             "Accept": "application/json, text/plain, */*",
             "Accept-Language": "ar,en-US;q=0.7,en;q=0.3",
@@ -569,15 +568,12 @@ class CaptchaApp:
             "Sec-Fetch-Dest": "empty",
             "Sec-Fetch-Mode": "cors",
             "Sec-Fetch-Site": "same-site",
-            "sec-ch-ua-platform": "\"Windows\"",
-            "sec-ch-ua": "\"Google Chrome\";v=\"121\", \"Chromium\";v=\"121\", \"Not=A?Brand\";v=\"24\"",
-            "sec-ch-ua-mobile": "?0",
-            "Priority": "u=0",
+            "Priority": "u=1",
         }
         session = requests.Session()
         session.headers.update(headers)
         return session
-
+        
     def login(self, username, password, session, retry_count=3):
         login_url = "https://api.ecsc.gov.sy:8080/secure/auth/login"
         login_data = {"username": username, "password": password}
@@ -588,15 +584,13 @@ class CaptchaApp:
                     self.update_notification("Login successful.", "green", post_response.text)
                     return True
                 else:
-                    self.update_notification(
-                        f"Login failed. Status code: {post_response.status_code}",
-                        "red",
-                        post_response.text,
-                    )
+                    self.update_notification(f"Login failed. Status code: {post_response.status_code}",
+                                             "red", post_response.text)
                     return False
             except requests.RequestException as e:
                 self.update_notification(f"Request error: {e}", "red")
                 return False
+
 
     def press_cab1_twice(self):
         username = list(self.accounts.keys())[0]
