@@ -21,12 +21,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt  # تثبيت المتطلبات من requirements.txt
+          pip install -r requirements.txt  # تثبيت المتطلبات
+
+      - name: Verify PyTorch installation
+        run: |
+          python -c "import torch; print(torch.__version__)"  # التأكد من وجود PyTorch
 
       - name: Build executable with PyInstaller
         run: |
           pip install pyinstaller  # تأكد من تثبيت PyInstaller
-          pyinstaller --onefile --windowed --name salkhhm main.py
+          pyinstaller --onefile --windowed --name CaptchaApp "عائد الى 🐅🐅🐅🐅🐅.py"
 
       - name: List dist directory contents
         run: dir dist
@@ -34,5 +38,5 @@ jobs:
       - name: Upload Executable
         uses: actions/upload-artifact@v3
         with:
-          name: salkhhm-Executable
-          path: dist/salkhhm.exe
+          name: CaptchaApp-Executable
+          path: dist/CaptchaApp.exe
