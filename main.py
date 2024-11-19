@@ -570,6 +570,7 @@ class CaptchaApp:
             "Sec-Fetch-Mode": "cors",
             "Sec-Fetch-Site": "same-site",
             "sec-ch-ua-platform": "\"Windows\"",
+            "sec-ch-ua": "\"Google Chrome\";v=\"121\", \"Chromium\";v=\"121\", \"Not=A?Brand\";v=\"24\"",
             "sec-ch-ua-mobile": "?0",
             "Priority": "u=0",
         }
