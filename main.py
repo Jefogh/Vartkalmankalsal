@@ -17,8 +17,6 @@ from datetime import datetime, timedelta
 
 import time
 import cv2
-import numpy as np
-from openvino.runtime import Core
 from PIL import Image
 
 
