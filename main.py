@@ -15,52 +15,82 @@ from torchvision import models
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
-cpu_device = torch.device("cpu")
 
 class TrainedModel:
-    def __init__(self):
+    def __init__(self, model_path='squeezenet_trained.pth'):
         start_time = time.time()
-        self.model = models.mobilenet_v2(pretrained=False)
-        self.model.classifier[1] = nn.Linear(self.model.last_channel, 30)
-        model_path = "C:/Users/ccl/Desktop/trained_model.pth"
-        self.model.load_state_dict(torch.load(model_path, map_location=cpu_device))
-        self.model = self.model.to(cpu_device)
+        # تحديد الجهاز ليكون CPU فقط
+        self.device = torch.device("cpu")
+
+        # تحميل نموذج SqueezeNet 1.1 مع أوزان ImageNet
+        self.model = models.squeezenet1_1(pretrained=True)
+        # تعديل الطبقة النهائية لتخرج 30 قناة (تقسيم المخرجات إلى 3 مجموعات: 10 للرقم الأول، 3 للعملية، و10 للرقم الثاني)
+        self.model.classifier[1] = nn.Conv2d(512, 30, kernel_size=1)
+        self.model.num_classes = 30
+
+        # تحميل الحالة المدربة مع التأكد من استخدام CPU
+        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+        self.model = self.model.to(self.device)
         self.model.eval()
-        print(f"Model loaded in {time.time() - start_time:.4f} seconds")
+
+        # إعداد تحويلات الصورة لتكون متوافقة مع ما استخدم أثناء التدريب
+        self.preprocess = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.Grayscale(num_output_channels=3),  # تحويل الصورة إلى 3 قنوات
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+        ])
+
+        print(f"تم تحميل النموذج على CPU في {time.time() - start_time:.4f} ثانية")
 
     def predict(self, img):
+        """
+        دالة التنبؤ التي:
+          - تتلقى صورة (img) على شكل numpy array كما يخرجها OpenCV (BGR)
+          - تقوم بتحويلها إلى تنسيق PIL وتطبيق التحويلات اللازمة
+          - تمرر الصورة إلى النموذج للحصول على التنبؤات
+          - تعيد التنبؤ: الرقم الأول، العملية، والرقم الثاني
+        """
         start_time = time.time()
-        resized_image = cv2.resize(img, (224, 224))  # تحديث الأبعاد لتتوافق مع MobileNet_v2
-        print(f"Image resizing (OpenCV) took {time.time() - start_time:.4f} seconds")
 
-        pil_image = Image.fromarray(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB))
-        preprocess = transforms.Compose([
-            transforms.Grayscale(num_output_channels=3),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ])
-        tensor_image = preprocess(pil_image).unsqueeze(0).to(cpu_device)
-        print(f"Image preprocessing took {time.time() - start_time:.4f} seconds")
+        # تحويل الصورة من BGR (OpenCV) إلى RGB وإنشاء كائن PIL
+        pil_image = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
 
-        start_time = time.time()
+        # تطبيق التحويلات على الصورة
+        input_tensor = self.preprocess(pil_image)
+        input_tensor = input_tensor.unsqueeze(0).to(self.device)  # إضافة بُعد الدُفعة
+
+        print(f"معالجة الصورة استغرقت {time.time() - start_time:.4f} ثانية")
+        start_inference = time.time()
+
+        # التنبؤ باستخدام النموذج مع تعطيل حساب التدرجات
         with torch.no_grad():
-            outputs = self.model(tensor_image).view(-1, 30)
-        print(f"Model prediction took {time.time() - start_time:.4f} seconds")
+            outputs = self.model(input_tensor)
+            # مخرجات SqueezeNet تكون على شكل (batch_size, 30, 1, 1)؛ نقوم بتسويتها إلى (batch_size, 30)
+            outputs = outputs.view(outputs.size(0), 30)
 
-        num1_preds = outputs[:, :10]
-        operation_preds = outputs[:, 10:13]
-        num2_preds = outputs[:, 13:]
+            # تقسيم المخرجات إلى 3 مجموعات
+            num1_preds = outputs[:, :10]
+            op_preds = outputs[:, 10:13]
+            num2_preds = outputs[:, 13:]
 
-        _, num1_predicted = torch.max(num1_preds, 1)
-        _, operation_predicted = torch.max(operation_preds, 1)
-        _, num2_predicted = torch.max(num2_preds, 1)
+            # الحصول على التصنيف لكل جزء
+            num1_predicted = torch.argmax(num1_preds, dim=1).item()
+            op_predicted = torch.argmax(op_preds, dim=1).item()
+            num2_predicted = torch.argmax(num2_preds, dim=1).item()
 
+        print(f"عملية التنبؤ استغرقت {time.time() - start_inference:.4f} ثانية")
+
+        # خريطة العمليات لتعيين الفئات إلى رموز العمليات
         operation_map = {0: "+", 1: "-", 2: "×"}
-        predicted_operation = operation_map[operation_predicted.item()]
+        predicted_operation = operation_map.get(op_predicted, "?")
 
-        del tensor_image
-        return num1_predicted.item(), predicted_operation, num2_predicted.item()
+        total_time = time.time() - start_time
+        print(f"إجمالي وقت التنبؤ: {total_time:.4f} ثانية")
 
+        return num1_predicted, predicted_operation, num2_predicted
+    
 class ExpandingCircle:
     def __init__(self, canvas, x, y, max_radius, color):
         self.canvas = canvas
