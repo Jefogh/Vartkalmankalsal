@@ -20,15 +20,27 @@ import cv2
 from PIL import Image
 
 
+import torch
+import torch.nn as nn
+import torchvision.models as models
+import torchvision.transforms as transforms
+import time
+import os
+
 class TrainedModel:
-    def __init__(self, model_path='squeezenet_trained.pth'):
+    def __init__(self, model_dir='C:/Users/ccl/Desktop', model_name='squeezenet_trained.pth'):
         start_time = time.time()
+        
         # تحديد الجهاز ليكون CPU فقط
         self.device = torch.device("cpu")
 
+        # إنشاء المسار الكامل للملف
+        model_path = os.path.join(model_dir, model_name)
+
         # تحميل نموذج SqueezeNet 1.1 مع أوزان ImageNet
         self.model = models.squeezenet1_1(pretrained=True)
-        # تعديل الطبقة النهائية لتخرج 30 قناة (تقسيم المخرجات إلى 3 مجموعات: 10 للرقم الأول، 3 للعملية، و10 للرقم الثاني)
+
+        # تعديل الطبقة النهائية لتخرج 30 قناة
         self.model.classifier[1] = nn.Conv2d(512, 30, kernel_size=1)
         self.model.num_classes = 30
 
@@ -37,7 +49,7 @@ class TrainedModel:
         self.model = self.model.to(self.device)
         self.model.eval()
 
-        # إعداد تحويلات الصورة لتكون متوافقة مع ما استخدم أثناء التدريب
+        # إعداد تحويلات الصورة
         self.preprocess = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.Grayscale(num_output_channels=3),  # تحويل الصورة إلى 3 قنوات
@@ -46,7 +58,7 @@ class TrainedModel:
                                  std=[0.229, 0.224, 0.225])
         ])
 
-        print(f"تم تحميل النموذج على CPU في {time.time() - start_time:.4f} ثانية")
+        print(f"تم تحميل النموذج من: {model_path} في {time.time() - start_time:.2f} ثانية")
 
     def predict(self, img):
         """
