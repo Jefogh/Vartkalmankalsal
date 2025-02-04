@@ -15,9 +15,15 @@ from torchvision import models
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
+import time
+import cv2
+import numpy as np
+from openvino.runtime import Core
+from PIL import Image
+
 
 class TrainedModel:
-    def __init__(self, model_path='C:/Users/ccl/Desktop/squeezenet_trained.pth'):
+    def __init__(self, model_path='squeezenet_trained.pth'):
         start_time = time.time()
         # تحديد الجهاز ليكون CPU فقط
         self.device = torch.device("cpu")
