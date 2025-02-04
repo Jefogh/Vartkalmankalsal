@@ -15,50 +15,20 @@ from torchvision import models
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
-import time
-import cv2
-from PIL import Image
 
+cpu_device = torch.device("cpu")
 
-import torch
-import torch.nn as nn
-import torchvision.models as models
-import torchvision.transforms as transforms
-import time
-import os
 
 class TrainedModel:
-    def __init__(self, model_dir='C:/Users/ccl/Desktop', model_name='squeezenet_trained.pth'):
+    def __init__(self):
         start_time = time.time()
-        
-        # تحديد الجهاز ليكون CPU فقط
-        self.device = torch.device("cpu")
-
-        # إنشاء المسار الكامل للملف
-        model_path = os.path.join(model_dir, model_name)
-
-        # تحميل نموذج SqueezeNet 1.1 مع أوزان ImageNet
-        self.model = models.squeezenet1_1(pretrained=True)
-
-        # تعديل الطبقة النهائية لتخرج 30 قناة
-        self.model.classifier[1] = nn.Conv2d(512, 30, kernel_size=1)
-        self.model.num_classes = 30
-
-        # تحميل الحالة المدربة مع التأكد من استخدام CPU
-        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
-        self.model = self.model.to(self.device)
+        self.model = models.squeezenet1_0(weights=None)
+        self.model.classifier[1] = nn.Conv2d(512, 30, kernel_size=(1, 1), stride=(1, 1))
+        model_path = "C:/Users/ccl/Desktop/squeezenet_trained.pth"
+        self.model.load_state_dict(torch.load(model_path, map_location=cpu_device, weights_only=True))
+        self.model = self.model.to(cpu_device)
         self.model.eval()
-
-        # إعداد تحويلات الصورة
-        self.preprocess = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.Grayscale(num_output_channels=3),  # تحويل الصورة إلى 3 قنوات
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])
-        ])
-
-        print(f"تم تحميل النموذج من: {model_path} في {time.time() - start_time:.2f} ثانية")
+        print(f"Model loaded in {time.time() - start_time:.4f} seconds")
 
     def predict(self, img):
         """
@@ -697,3 +667,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = CaptchaApp(root)
     root.mainloop()
+    
