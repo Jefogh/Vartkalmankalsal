@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 
 
 class TrainedModel:
-    def __init__(self, model_path='squeezenet_trained.pth'):
+    def __init__(self, model_path='C:/Users/ccl/Desktop/squeezenet_trained.pth'):
         start_time = time.time()
         # تحديد الجهاز ليكون CPU فقط
         self.device = torch.device("cpu")
