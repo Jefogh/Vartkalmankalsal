@@ -16,9 +16,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
 
-# تحديد الجهاز لاستخدام الـ CPU
+# تعريف الجهاز (في هذه الحالة جهاز CPU)
 cpu_device = torch.device("cpu")
-
 
 class TrainedModel:
     def __init__(self):
