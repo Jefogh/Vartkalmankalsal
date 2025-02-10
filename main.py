@@ -15,21 +15,19 @@ from torchvision import models
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
-
-# تعريف الجهاز (في هذه الحالة جهاز CPU)
-cpu_device = torch.device("cpu")
+# تأكد من تعريف الجهاز (CPU) الذي سيتم عليه تحميل النموذج
+cpu_device = torch.device('cpu')
 
 class TrainedModel:
     def __init__(self):
         start_time = time.time()
-        # استخدام نموذج MobileNet V2 (FB MobileNet) بدون أوزان مسبقة
+        # استخدام MobileNet V2 بدلاً من SqueezeNet 1.1
         self.model = models.mobilenet_v2(pretrained=False)
-        # تعديل طبقة المصنف لتخرج 30 قيمة كما تم أثناء التدريب
+        # تعديل طبقة المصنف لتخرج 30 قيمة (10 للرقم الأول، 3 للعملية، 10 للرقم الثاني)
         in_features = self.model.classifier[1].in_features
         self.model.classifier[1] = nn.Linear(in_features, 30)
-        # تأكد من أن المسار يشير إلى ملف النموذج المدرب (FB MobileNet)
-        model_path = "C:/Users/ccl/Desktop/fbmobilenet_trained.pth"
-        # تحميل حالة النموذج المدرب على جهاز CPU
+        model_path = "C:/Users/ccl/Desktop/fbmobilenet_trained.pth"  # تأكد من صحة المسار إلى النموذج المُدرَّب
+        # تحميل حالة النموذج على جهاز CPU
         self.model.load_state_dict(torch.load(model_path, map_location=cpu_device))
         self.model = self.model.to(cpu_device)
         self.model.eval()
@@ -37,18 +35,16 @@ class TrainedModel:
 
     def predict(self, img):
         """
-        توقع العملية الحسابية من صورة مدخلة.
-        :param img: مصفوفة (numpy array) تمثل الصورة بنظام BGR (كما في OpenCV)
-        :return: tuple من (الرقم الأول, رمز العملية, الرقم الثاني)
+        الدالة تتوقع العملية الحسابية من صورة يتم تمريرها على شكل مصفوفة (numpy array) من نوع BGR (كما في OpenCV).
         """
         start_time = time.time()
-        # تغيير حجم الصورة لتتوافق مع مدخلات النموذج (224x224)
+        # تغيير حجم الصورة لتتوافق مع مدخلات النموذج (224×224)
         resized_image = cv2.resize(img, (224, 224))
         print(f"Image resizing (OpenCV) took {time.time() - start_time:.4f} seconds")
 
-        # تحويل الصورة إلى PIL مع تصحيح ترتيب القنوات (BGR -> RGB)
+        # تحويل الصورة إلى PIL وتصحيح ترتيب القنوات (BGR -> RGB)
         pil_image = Image.fromarray(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB))
-        # إعداد التحويلات (preprocessing) كما استخدم أثناء التدريب
+        # إعداد ما قبل المعالجة بنفس الإعدادات المستخدمة أثناء التدريب
         preprocess = transforms.Compose([
             transforms.Grayscale(num_output_channels=3),
             transforms.ToTensor(),
@@ -65,9 +61,7 @@ class TrainedModel:
         print(f"Model prediction took {time.time() - start_time:.4f} seconds")
 
         # تقسيم المخرجات إلى ثلاث مجموعات:
-        # - أول 10 لخانة الرقم الأول
-        # - 3 لخانة العملية
-        # - الباقي للرقم الثاني
+        # أول 10 للقيمة الأولى، 3 للعملية، والباقي للقيمة الثانية
         num1_preds = outputs[:, :10]
         operation_preds = outputs[:, 10:13]
         num2_preds = outputs[:, 13:]
